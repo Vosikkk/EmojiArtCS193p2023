@@ -9,7 +9,7 @@ import SwiftUI
 
 struct PaletteChooser: View {
     
-    var store: PaletteStore
+    @EnvironmentObject var store: PaletteStore
     
     var body: some View {
         HStack {
@@ -69,4 +69,5 @@ struct ScrollingEmojis: View {
 
 #Preview {
     PaletteChooser()
+        .environmentObject(PaletteStore(named: "Preview"))
 }
