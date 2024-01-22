@@ -23,8 +23,7 @@ class EmojiArtDocument: ObservableObject {
     var background: URL? {
         emojiArt.background
     }
-    
-    
+
     
     // MARK: - Intent(s)
     
