@@ -14,12 +14,6 @@ struct EmojiArtDocumentView: View {
     
     @ObservedObject var document: EmojiArtDocument
     
-   
-    
-   
-    @GestureState private var emojiGestureZoom: CGFloat = 1
-    @GestureState private var emojiGesturePan: CGOffset = .zero
-    
     var body: some View {
         VStack(spacing: 0) {
             documentBody
@@ -52,8 +46,8 @@ struct EmojiArtDocumentView: View {
             .position(Emoji.Position.zero.in(geometry))
         ForEach(document.emojis) { emoji in
             view(for: emoji, in: geometry)
-                .gesture(handleTap(on: emoji))
-            
+                .offset(isSelected(emoji.id) ? emojiGesturePan : .zero)
+                .gesture(handleTap(on: emoji).simultaneously(with: emojiPanGesture))
         }
     }
     
@@ -78,7 +72,25 @@ struct EmojiArtDocumentView: View {
                 gesturePan = value.translation
             }
             .onEnded { value in
-                pan += value.translation
+                if selectedEmojis.isEmpty {
+                    pan += value.translation
+                }
+            }
+    }
+    
+   
+    @GestureState private var emojiGestureZoom: CGFloat = 1
+    @GestureState private var emojiGesturePan: CGOffset = .zero
+    
+    private var emojiPanGesture: some Gesture {
+        DragGesture()
+            .updating($emojiGesturePan) { value, gesturePan, _ in
+                gesturePan = value.translation
+            }
+            .onEnded { value in
+                for id in selectedEmojis {
+                    document.move(emojiWith: id, by: value.translation)
+                }
             }
     }
     
@@ -110,8 +122,9 @@ struct EmojiArtDocumentView: View {
     private func view(for emoji: Emoji, in geometry: GeometryProxy) -> some View {
         Text(emoji.string)
             .font(emoji.font)
-            .selectEffect(isSelected: isAlreadySelected(emoji.id), scaledTo: zoom * gestureZoom)
+            .selectedEffect(isSelected(emoji.id), scaleFactor: zoom * gestureZoom)
             .position(emoji.position.in(geometry))
+        
     }
     
     
@@ -128,7 +141,7 @@ struct EmojiArtDocumentView: View {
     private func handleTap(on emoji: Emoji) -> some Gesture {
         TapGesture()
             .onEnded {
-                if isAlreadySelected(emoji.id) {
+                if isSelected(emoji.id) {
                     selectedEmojis.remove(emoji.id)
                 } else {
                     selectedEmojis.insert(emoji.id)
@@ -139,7 +152,7 @@ struct EmojiArtDocumentView: View {
     
     
     
-    private func isAlreadySelected(_ id: Emoji.ID) -> Bool {
+    private func isSelected(_ id: Emoji.ID) -> Bool {
         selectedEmojis.contains(id)
     }
     

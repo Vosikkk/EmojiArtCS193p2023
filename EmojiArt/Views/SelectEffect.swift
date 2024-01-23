@@ -7,16 +7,21 @@
 
 import SwiftUI
 
-struct SelectEffect: ViewModifier {
+struct SelectedEffect: ViewModifier {
     
     var isSelected: Bool
-    var scaledTo: CGFloat
+    var scaleFactor: CGFloat
+    
+    init(_ isSelected: Bool, scaleFactor: CGFloat) {
+        self.isSelected = isSelected
+        self.scaleFactor = scaleFactor
+    }
+    
+    
     
     func body(content: Content) -> some View {
         content
             .overlay(isSelected ? ractangle : nil)
-//           // .padding(1)
-//            .border(isSelected ? .blue : .clear, width: Constant.lindeWidth / zoom)
     }
     
     private struct Constant {
@@ -25,15 +30,15 @@ struct SelectEffect: ViewModifier {
     }
     
     private var ractangle: some View {
-        RoundedRectangle(cornerRadius: Constant.cornerRadius / scaledTo)
-            .strokeBorder(lineWidth: Constant.lindeWidth / scaledTo)
+        RoundedRectangle(cornerRadius: Constant.cornerRadius / scaleFactor)
+            .strokeBorder(lineWidth: Constant.lindeWidth / scaleFactor)
             .foregroundStyle(.blue)
             
     }
 }
 
 extension View {
-    func selectEffect(isSelected: Bool, scaledTo: CGFloat) -> some View {
-        modifier(SelectEffect(isSelected: isSelected, scaledTo: scaledTo))
+    func selectedEffect(_ isSelected: Bool, scaleFactor: CGFloat) -> some View {
+        modifier(SelectedEffect(isSelected, scaleFactor: scaleFactor))
     }
 }

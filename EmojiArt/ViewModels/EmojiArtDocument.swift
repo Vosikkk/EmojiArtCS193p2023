@@ -35,7 +35,31 @@ class EmojiArtDocument: ObservableObject {
     func addEmoji(_ emoji: String, at position: Emoji.Position, size: CGFloat) {
         emojiArt.addEmoji(emoji, at: position, size: Int(size))
     }
+    
+   
+    func move(_ emoji: Emoji, by offset: CGOffset) {
+        let exitingPosition = emojiArt[emoji].position
+        emojiArt[emoji].position = exitingPosition +- offset
+    }
+    
+    func move(emojiWith id: Emoji.ID, by offset: CGOffset) {
+        if let emoji = emojiArt[id] {
+            move(emoji, by: offset)
+        }
+    }
+    
+    func resize(_ emoji: Emoji, by scale: CGFloat) {
+        emojiArt[emoji].size = Int(CGFloat(emojiArt[emoji].size) * scale)
+    }
+    
+    func resize(emojiWith id: Emoji.ID, by scale: CGFloat) {
+        if let emoji = emojiArt[id] {
+            resize(emoji, by: scale)
+        }
+    }
 }
+
+
 
 extension EmojiArt.Emoji {
     var font: Font {
@@ -43,10 +67,20 @@ extension EmojiArt.Emoji {
     }
 }
 
+
+
+
 extension EmojiArt.Emoji.Position {
+    
+    
+    typealias Position = EmojiArt.Emoji.Position
     
     func `in`(_ geometry: GeometryProxy) -> CGPoint {
         let center = geometry.frame(in: .local).center
         return CGPoint(x: center.x + CGFloat(x), y: center.y - CGFloat(y))
+    }
+    
+    static func +-(lhs: Position, rhs: CGOffset) -> Position {
+       Position(x: lhs.x + Int(rhs.width), y: lhs.y - Int(rhs.height))
     }
 }
