@@ -14,16 +14,16 @@ struct EmojiArtDocumentView: View {
     
     @ObservedObject var document: EmojiArtDocument
     
-    @State private var zoom: CGFloat = 1
-    @State private var pan: CGOffset = .zero
+   
     
-    @GestureState private var gestureZoom: CGFloat = 1
-    @GestureState private var gesturePan: CGOffset = .zero
-    
+   
+    @GestureState private var emojiGestureZoom: CGFloat = 1
+    @GestureState private var emojiGesturePan: CGOffset = .zero
     
     var body: some View {
         VStack(spacing: 0) {
             documentBody
+                .gesture(tapDocumentGesture)
             PaletteChooser()
                 .font(.system(size: paletteEmojiSize))
                 .padding(.horizontal)
@@ -51,11 +51,16 @@ struct EmojiArtDocumentView: View {
         AsyncImage(url: document.background)
             .position(Emoji.Position.zero.in(geometry))
         ForEach(document.emojis) { emoji in
-            Text(emoji.string)
-                .font(emoji.font)
-                .position(emoji.position.in(geometry))
+            view(for: emoji, in: geometry)
+                .gesture(handleTap(on: emoji))
+            
         }
     }
+    
+    @State private var zoom: CGFloat = 1
+    @State private var pan: CGOffset = .zero
+    @GestureState private var gestureZoom: CGFloat = 1
+    @GestureState private var gesturePan: CGOffset = .zero
     
     private var zoomGesture: some Gesture {
         MagnificationGesture()
@@ -101,6 +106,43 @@ struct EmojiArtDocumentView: View {
             y: Int(-(location.y - center.y - pan.height) / zoom)
         )
     }
+    
+    private func view(for emoji: Emoji, in geometry: GeometryProxy) -> some View {
+        Text(emoji.string)
+            .font(emoji.font)
+            .selectEffect(isSelected: isAlreadySelected(emoji.id), scaledTo: zoom * gestureZoom)
+            .position(emoji.position.in(geometry))
+    }
+    
+    
+    @State private var selectedEmojis: Set<Emoji.ID> = []
+    
+    
+    private var tapDocumentGesture: some Gesture {
+        TapGesture()
+            .onEnded {
+                selectedEmojis.removeAll()
+            }
+    }
+  
+    private func handleTap(on emoji: Emoji) -> some Gesture {
+        TapGesture()
+            .onEnded {
+                if isAlreadySelected(emoji.id) {
+                    selectedEmojis.remove(emoji.id)
+                } else {
+                    selectedEmojis.insert(emoji.id)
+                }
+            }
+    }
+    
+    
+    
+    
+    private func isAlreadySelected(_ id: Emoji.ID) -> Bool {
+        selectedEmojis.contains(id)
+    }
+    
 }
 
 
