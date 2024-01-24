@@ -11,17 +11,19 @@ struct SelectedEffect: ViewModifier {
     
     var isSelected: Bool
     var scaleFactor: CGFloat
+    var isGestureActive: Bool
     
-    init(_ isSelected: Bool, scaleFactor: CGFloat) {
+    init(_ isSelected: Bool, _ scaleFactor: CGFloat, isGestureActive: Bool) {
         self.isSelected = isSelected
         self.scaleFactor = scaleFactor
+        self.isGestureActive = isGestureActive
     }
     
     
     
     func body(content: Content) -> some View {
         content
-            .overlay(isSelected ? ractangle : nil)
+            .overlay(isSelected && !isGestureActive ? ractangle : nil)
     }
     
     private struct Constant {
@@ -38,7 +40,7 @@ struct SelectedEffect: ViewModifier {
 }
 
 extension View {
-    func selectedEffect(_ isSelected: Bool, scaleFactor: CGFloat) -> some View {
-        modifier(SelectedEffect(isSelected, scaleFactor: scaleFactor))
+    func selectedEffect(_ isSelected: Bool, _ scaleFactor: CGFloat, isGestureActive: Bool) -> some View {
+        modifier(SelectedEffect(isSelected, scaleFactor, isGestureActive: isGestureActive))
     }
 }
