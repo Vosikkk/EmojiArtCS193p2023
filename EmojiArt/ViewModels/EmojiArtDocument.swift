@@ -68,10 +68,7 @@ extension EmojiArt.Emoji {
 }
 
 
-
-
 extension EmojiArt.Emoji.Position {
-    
     
     typealias Position = EmojiArt.Emoji.Position
     

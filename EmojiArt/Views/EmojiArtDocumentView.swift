@@ -18,7 +18,6 @@
         var body: some View {
             VStack(spacing: 0) {
                 documentBody
-                    .gesture(tapDocumentGesture)
                 PaletteChooser()
                     .font(.system(size: paletteEmojiSize))
                     .padding(.horizontal)
@@ -31,15 +30,16 @@
                 ZStack {
                     Color.white
                     documentContents(in: geometry)
-                        .scaleEffect(zoom * gestureZoom)
-                        .offset(pan + gesturePan)
+                        .scaleEffect(selectedEmojis.isEmpty ? scaleFactor : lastBackgoundZoom)
+                        .offset(panOffset)
                 }
-                .gesture(panGesture.simultaneously(with: zoomGesture))
+                .gesture(panGesture.simultaneously(with: zoomGesture).simultaneously(with: tapDocumentGesture))
                 .dropDestination(for: SturlData.self) { sturldatas, location in
                     return drop(sturldatas, at: location, in: geometry)
                 }
             }
         }
+        
         
         @ViewBuilder
         private func documentContents(in geometry: GeometryProxy) -> some View {
@@ -47,20 +47,40 @@
                 .position(Emoji.Position.zero.in(geometry))
             ForEach(document.emojis) { emoji in
                 view(for: emoji, in: geometry)
-                    .offset(isSelected(emoji.id) ? emojiGesturePan : .zero)
-                    .scaleEffect(isSelected(emoji.id) ? gestureZoom : 1)
-                    .gesture(handleTap(on: emoji)
+                    .gesture(handleEmojiTap(on: emoji)
                         .simultaneously(with: isSelected(emoji.id) ? emojiPanGesture : nil)
                         .simultaneously(with: isSelected(emoji.id) ? zoomGesture : nil)
                     )
             }
         }
         
+        
+        private func drop(_ sturldatas: [SturlData], at location: CGPoint, in geometry: GeometryProxy) -> Bool {
+            for sturldata in sturldatas {
+                switch sturldata {
+                case .url(let url):
+                    document.setBackground(url)
+                    return true
+                case .string(let emoji):
+                    document.addEmoji(
+                        emoji, at: emojiPosition(at: location, in: geometry), size: paletteEmojiSize / zoom)
+                    return true
+                default:
+                    break
+                }
+            }
+            return false
+        }
+        
+        
+        @State private var lastBackgoundZoom: CGFloat = 1
         @State private var zoom: CGFloat = 1
         @State private var pan: CGOffset = .zero
+        
         @GestureState private var gestureZoom: CGFloat = 1
         @GestureState private var gesturePan: CGOffset = .zero
         
+       
         private var zoomGesture: some Gesture {
             MagnificationGesture()
                 .updating($gestureZoom) { inMotionPinchScale, gestureZoom, _ in
@@ -69,6 +89,7 @@
                 .onEnded { endingPinchScale in
                     if selectedEmojis.isEmpty {
                         zoom *= endingPinchScale
+                        lastBackgoundZoom = zoom
                     } else {
                         for id in selectedEmojis {
                             document.resize(emojiWith: id, by: endingPinchScale)
@@ -112,35 +133,17 @@
                 }
         }
         
-        private var emojiZoomGesture: some Gesture {
-            MagnificationGesture()
-                .updating($emojiGestureZoom) { inMotionPinchScale, gestureZoom, _ in
-                    gestureZoom = inMotionPinchScale
-                }
-                .onEnded { endingPinchScale in
-                    for id in selectedEmojis {
-                        document.resize(emojiWith: id, by: endingPinchScale)
+        private func handleEmojiTap(on emoji: Emoji) -> some Gesture {
+            TapGesture()
+                .onEnded {
+                    if isSelected(emoji.id) {
+                        selectedEmojis.remove(emoji.id)
+                    } else {
+                        selectedEmojis.insert(emoji.id)
                     }
                 }
-            
         }
         
-        private func drop(_ sturldatas: [SturlData], at location: CGPoint, in geometry: GeometryProxy) -> Bool {
-            for sturldata in sturldatas {
-                switch sturldata {
-                case .url(let url):
-                    document.setBackground(url)
-                    return true
-                case .string(let emoji):
-                    document.addEmoji(
-                        emoji, at: emojiPosition(at: location, in: geometry), size: paletteEmojiSize / zoom)
-                    return true
-                default:
-                    break
-                }
-            }
-            return false
-        }
         
         private func emojiPosition(at location: CGPoint, in geometry: GeometryProxy) -> Emoji.Position {
             let center = geometry.frame(in: .local).center
@@ -153,9 +156,10 @@
         private func view(for emoji: Emoji, in geometry: GeometryProxy) -> some View {
             Text(emoji.string)
                 .font(emoji.font)
-                .selectedEffect(isSelected(emoji.id), scaleFactor, isGestureActive: isInMotion)
+                .selectedEffect(isSelected(emoji.id), scaleFactor, isGestureActive: isMotion)
+                .offset(shouldApplyEmojiOffset(isSelected(emoji.id)))
+                .scaleEffect(shouldApplyEmojiScale(isSelected(emoji.id)))
                 .position(emoji.position.in(geometry))
-            
         }
         
         
@@ -165,24 +169,24 @@
             zoom * gestureZoom
         }
         
-        private var isInMotion: Bool {
+        private var isMotion: Bool {
             emojiGesturePan != .zero
         }
-       
-        private func handleTap(on emoji: Emoji) -> some Gesture {
-            TapGesture()
-                .onEnded {
-                    if isSelected(emoji.id) {
-                        selectedEmojis.remove(emoji.id)
-                    } else {
-                        selectedEmojis.insert(emoji.id)
-                    }
-                }
-        }
         
-    
+        private var panOffset: CGOffset {
+            pan + gesturePan
+        }
+       
         private func isSelected(_ id: Emoji.ID) -> Bool {
             selectedEmojis.contains(id)
+        }
+        
+        private func shouldApplyEmojiOffset(_ isSelected: Bool) -> CGOffset {
+             isSelected ? emojiGesturePan : .zero
+        }
+        
+        private func shouldApplyEmojiScale(_ isSelected: Bool) -> CGFloat {
+             isSelected ? gestureZoom : 1
         }
     }
 
