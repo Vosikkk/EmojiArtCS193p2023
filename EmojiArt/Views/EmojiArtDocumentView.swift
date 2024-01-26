@@ -33,7 +33,7 @@
                         .scaleEffect(selectedEmojis.isEmpty ? scaleFactor : lastBackgoundZoom)
                         .offset(panOffset)
                 }
-                .gesture(panGesture.simultaneously(with: zoomGesture).simultaneously(with: tapDocumentGesture))
+                .gesture(panGesture.simultaneously(with: zoomGesture).simultaneously(with: tapDocumentGesture).simultaneously(with: isLongTappingEnd ? nil : longTappingGesture))
                 .dropDestination(for: SturlData.self) { sturldatas, location in
                     return drop(sturldatas, at: location, in: geometry)
                 }
@@ -72,7 +72,7 @@
             return false
         }
         
-        
+        @State private var isLongTappingEnd: Bool = false
         @State private var lastBackgoundZoom: CGFloat = 1
         @State private var zoom: CGFloat = 1
         @State private var pan: CGOffset = .zero
@@ -113,7 +113,9 @@
         private var tapDocumentGesture: some Gesture {
             TapGesture()
                 .onEnded {
-                    selectedEmojis.removeAll()
+                    withAnimation {
+                        selectedEmojis.removeAll()
+                    }
                 }
         }
       
@@ -157,11 +159,18 @@
             Text(emoji.string)
                 .font(emoji.font)
                 .selectedEffect(isSelected(emoji.id), scaleFactor, isGestureActive: isMotion)
-                .offset(shouldApplyEmojiOffset(isSelected(emoji.id)))
+                .offset(shouldApplyOffset(isSelected(emoji.id)))
                 .scaleEffect(shouldApplyEmojiScale(isSelected(emoji.id)))
                 .position(emoji.position.in(geometry))
+                .overlay(isLongTappingEnd ? deleter(for: emoji, in: emoji.position.in(geometry)) : nil)
         }
         
+        private var longTappingGesture: some Gesture {
+            LongPressGesture(minimumDuration: 1.0)
+                .onEnded { finish in
+                    isLongTappingEnd = finish
+                }
+        }
         
         @State private var selectedEmojis: Set<Emoji.ID> = []
         
@@ -181,13 +190,24 @@
             selectedEmojis.contains(id)
         }
         
-        private func shouldApplyEmojiOffset(_ isSelected: Bool) -> CGOffset {
+        private func shouldApplyOffset(_ isSelected: Bool) -> CGOffset {
              isSelected ? emojiGesturePan : .zero
         }
         
         private func shouldApplyEmojiScale(_ isSelected: Bool) -> CGFloat {
              isSelected ? gestureZoom : 1
         }
+        
+        private func deleter(for emoji: Emoji, in position: CGPoint) -> some View {
+            return AnimatedActionButton(systemImage: "minus.circle") {
+                document.remove(emojiWith: emoji.id)
+                isLongTappingEnd = false
+            }
+            .offset(shouldApplyOffset(true))
+            .position(CGPoint(x: position.x + CGFloat(emoji.size / 2), y: position.y - CGFloat(emoji.size / 2)))
+            
+        }
+        
     }
 
 

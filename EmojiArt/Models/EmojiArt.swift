@@ -54,6 +54,13 @@ struct EmojiArt {
     }
     
     
+    mutating func remove(emojiWith id: Emoji.ID) {
+        if let idForRemove = index(of: id) {
+            emojis.remove(at: idForRemove)
+        }
+    }
+    
+    
     private func index(of emojiId: Emoji.ID) -> Int? {
         emojis.firstIndex(where: { $0.id == emojiId } )
     }

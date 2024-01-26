@@ -37,7 +37,7 @@ class EmojiArtDocument: ObservableObject {
     }
     
    
-    func move(_ emoji: Emoji, by offset: CGOffset) {
+    private func move(_ emoji: Emoji, by offset: CGOffset) {
         let exitingPosition = emojiArt[emoji].position
         emojiArt[emoji].position = exitingPosition +- offset
     }
@@ -48,7 +48,7 @@ class EmojiArtDocument: ObservableObject {
         }
     }
     
-    func resize(_ emoji: Emoji, by scale: CGFloat) {
+    private func resize(_ emoji: Emoji, by scale: CGFloat) {
         emojiArt[emoji].size = Int(CGFloat(emojiArt[emoji].size) * scale)
     }
     
@@ -56,6 +56,10 @@ class EmojiArtDocument: ObservableObject {
         if let emoji = emojiArt[id] {
             resize(emoji, by: scale)
         }
+    }
+    
+    func remove(emojiWith id: Emoji.ID) {
+        emojiArt.remove(emojiWith: id)
     }
 }
 

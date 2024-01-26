@@ -64,7 +64,9 @@ struct AnimatedActionButton: View {
                 Image(systemName: systemImage)
             }
         }
+        
     }
+        
 }
 
 
@@ -83,3 +85,4 @@ extension AnyTransition {
     static let rollUp: AnyTransition = .asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .top))
     static let rollDown: AnyTransition = .asymmetric(insertion: .move(edge: .top), removal: .move(edge: .bottom))
 }
+
