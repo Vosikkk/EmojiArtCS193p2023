@@ -64,7 +64,6 @@ struct AnimatedActionButton: View {
                 Image(systemName: systemImage)
             }
         }
-        
     }
         
 }

@@ -30,10 +30,10 @@
                 ZStack {
                     Color.white
                     documentContents(in: geometry)
-                        .scaleEffect(selectedEmojis.isEmpty ? scaleFactor : lastBackgoundZoom)
+                        .scaleEffect(scaleEffect)
                         .offset(panOffset)
                 }
-                .gesture(panGesture.simultaneously(with: zoomGesture).simultaneously(with: tapDocumentGesture).simultaneously(with: isLongTappingEnd ? nil : longTappingGesture))
+                .gesture(panGesture.simultaneously(with: zoomGesture).simultaneously(with: tapDocumentGesture).simultaneously(with: longTappingGesture))
                 .dropDestination(for: SturlData.self) { sturldatas, location in
                     return drop(sturldatas, at: location, in: geometry)
                 }
@@ -72,7 +72,7 @@
             return false
         }
         
-        @State private var isLongTappingEnd: Bool = false
+        @State private var isNeedToShowButtonForDelete: Bool = false
         @State private var lastBackgoundZoom: CGFloat = 1
         @State private var zoom: CGFloat = 1
         @State private var pan: CGOffset = .zero
@@ -115,6 +115,7 @@
                 .onEnded {
                     withAnimation {
                         selectedEmojis.removeAll()
+                        isNeedToShowButtonForDelete = false
                     }
                 }
         }
@@ -156,26 +157,26 @@
         }
         
         private func view(for emoji: Emoji, in geometry: GeometryProxy) -> some View {
-            Text(emoji.string)
-                .font(emoji.font)
-                .selectedEffect(isSelected(emoji.id), scaleFactor, isGestureActive: isMotion)
-                .offset(shouldApplyOffset(isSelected(emoji.id)))
-                .scaleEffect(shouldApplyEmojiScale(isSelected(emoji.id)))
-                .position(emoji.position.in(geometry))
-                .overlay(isLongTappingEnd ? deleter(for: emoji, in: emoji.position.in(geometry)) : nil)
+                Text(emoji.string)
+                    .font(emoji.font)
+                    .selectedEffect(isSelected(emoji.id), scaleEffect, isGestureActive: isMotion)
+                    .offset(shouldApplyOffset(isSelected(emoji.id)))
+                    .scaleEffect(shouldApplyEmojiScale(isSelected(emoji.id)))
+                    .position(emoji.position.in(geometry))
+                    .overlay(isNeedToShowButtonForDelete ? deleter(for: emoji, in: emoji.position.in(geometry)) : nil)
         }
         
         private var longTappingGesture: some Gesture {
             LongPressGesture(minimumDuration: 1.0)
-                .onEnded { finish in
-                    isLongTappingEnd = finish
+                .onEnded { finished in
+                    isNeedToShowButtonForDelete = finished
                 }
         }
         
         @State private var selectedEmojis: Set<Emoji.ID> = []
         
-        private var scaleFactor: CGFloat {
-            zoom * gestureZoom
+        private var scaleEffect: CGFloat {
+            selectedEmojis.isEmpty ? zoom * gestureZoom : lastBackgoundZoom
         }
         
         private var isMotion: Bool {
@@ -199,15 +200,18 @@
         }
         
         private func deleter(for emoji: Emoji, in position: CGPoint) -> some View {
-            return AnimatedActionButton(systemImage: "minus.circle") {
+            return AnimatedActionButton(systemImage: "x.circle.fill") {
                 document.remove(emojiWith: emoji.id)
-                isLongTappingEnd = false
+                if selectedEmojis.contains(emoji.id) {
+                    selectedEmojis.remove(emoji.id)
+                }
             }
-            .offset(shouldApplyOffset(true))
-            .position(CGPoint(x: position.x + CGFloat(emoji.size / 2), y: position.y - CGFloat(emoji.size / 2)))
-            
+            .foregroundStyle(.gray)
+            .font(emoji.halfFont)
+            .offset(shouldApplyOffset(isSelected(emoji.id)))
+            .position(positionForButton(by: emoji, in: position))
+            .zIndex(1)
         }
-        
     }
 
 

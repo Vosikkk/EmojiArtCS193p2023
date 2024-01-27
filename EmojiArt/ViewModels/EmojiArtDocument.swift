@@ -66,8 +66,13 @@ class EmojiArtDocument: ObservableObject {
 
 
 extension EmojiArt.Emoji {
+    
     var font: Font {
         Font.system(size: CGFloat(size))
+    }
+    
+    var halfFont: Font {
+        Font.system(size: CGFloat(size / 2))
     }
 }
 
@@ -83,5 +88,12 @@ extension EmojiArt.Emoji.Position {
     
     static func +-(lhs: Position, rhs: CGOffset) -> Position {
        Position(x: lhs.x + Int(rhs.width), y: lhs.y - Int(rhs.height))
+    }
+}
+
+extension View {
+    
+    func positionForButton(by emoji: EmojiArt.Emoji, in position: CGPoint) -> CGPoint {
+         CGPoint(x: position.x - CGFloat(Double(emoji.size) / 2), y: position.y - CGFloat(Double(emoji.size) / 1.4))
     }
 }
