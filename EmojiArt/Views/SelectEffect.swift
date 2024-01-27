@@ -26,16 +26,16 @@ struct SelectedEffect: ViewModifier {
             .overlay(isSelected && !isGestureActive ? ractangle : nil)
     }
     
-    private struct Constant {
-        static let lindeWidth: CGFloat = 1.5
-        static let cornerRadius: CGFloat = 8
-    }
-    
     private var ractangle: some View {
         RoundedRectangle(cornerRadius: Constant.cornerRadius / scaleFactor)
             .strokeBorder(lineWidth: Constant.lindeWidth / scaleFactor)
             .foregroundStyle(.blue)
             
+    }
+    
+    private struct Constant {
+        static let lindeWidth: CGFloat = 1.5
+        static let cornerRadius: CGFloat = 8
     }
 }
 

@@ -15,6 +15,10 @@
         
         @ObservedObject var document: EmojiArtDocument
         
+        
+        
+        // MARK: - Views
+        
         var body: some View {
             VStack(spacing: 0) {
                 documentBody
@@ -33,7 +37,7 @@
                         .scaleEffect(scaleEffect)
                         .offset(panOffset)
                 }
-                .gesture(panGesture.simultaneously(with: zoomGesture).simultaneously(with: tapDocumentGesture).simultaneously(with: longTappingGesture))
+                .gesture(panGesture.simultaneously(with: !isNeedToShowButtonForDelete ? zoomGesture : nil).simultaneously(with: tapDocumentGesture).simultaneously(with: longTappingGesture))
                 .dropDestination(for: SturlData.self) { sturldatas, location in
                     return drop(sturldatas, at: location, in: geometry)
                 }
@@ -48,32 +52,38 @@
             ForEach(document.emojis) { emoji in
                 view(for: emoji, in: geometry)
                     .gesture(handleEmojiTap(on: emoji)
-                        .simultaneously(with: isSelected(emoji.id) ? emojiPanGesture : nil)
+                        .simultaneously(with: allowPan(for: emoji.id) ? emojiPanGesture : nil)
                         .simultaneously(with: isSelected(emoji.id) ? zoomGesture : nil)
                     )
             }
         }
         
-        
-        private func drop(_ sturldatas: [SturlData], at location: CGPoint, in geometry: GeometryProxy) -> Bool {
-            for sturldata in sturldatas {
-                switch sturldata {
-                case .url(let url):
-                    document.setBackground(url)
-                    return true
-                case .string(let emoji):
-                    document.addEmoji(
-                        emoji, at: emojiPosition(at: location, in: geometry), size: paletteEmojiSize / zoom)
-                    return true
-                default:
-                    break
-                }
-            }
-            return false
+        private func view(for emoji: Emoji, in geometry: GeometryProxy) -> some View {
+                Text(emoji.string)
+                    .font(emoji.font)
+                    .selectedEffect(isSelected(emoji.id), scaleEffect, isGestureActive: isMotion)
+                    .offset(shouldApplyOffset(isSelected(emoji.id)))
+                    .scaleEffect(shouldApplyEmojiScale(isSelected(emoji.id)))
+                    .position(emoji.position.in(geometry))
+                    .overlay(isNeedToShowButtonForDelete ? deleter(for: emoji, in: emoji.position.in(geometry)) : nil)
         }
         
+        private func deleter(for emoji: Emoji, in position: CGPoint) -> some View {
+            return AnimatedActionButton(systemImage: "x.circle.fill") {
+                document.remove(emojiWith: emoji.id)
+                if selectedEmojis.contains(emoji.id) {
+                    selectedEmojis.remove(emoji.id)
+                }
+            }
+            .foregroundStyle(.gray)
+            .font(emoji.halfFont)
+            .position(positionForButton(by: emoji, in: position))
+            .zIndex(1)
+        }
+        
+        // MARK: - Document Gesture
+        
         @State private var isNeedToShowButtonForDelete: Bool = false
-        @State private var lastBackgoundZoom: CGFloat = 1
         @State private var zoom: CGFloat = 1
         @State private var pan: CGOffset = .zero
         
@@ -89,7 +99,6 @@
                 .onEnded { endingPinchScale in
                     if selectedEmojis.isEmpty {
                         zoom *= endingPinchScale
-                        lastBackgoundZoom = zoom
                     } else {
                         for id in selectedEmojis {
                             document.resize(emojiWith: id, by: endingPinchScale)
@@ -115,12 +124,15 @@
                 .onEnded {
                     withAnimation {
                         selectedEmojis.removeAll()
+                        // so turn off deleting condition
                         isNeedToShowButtonForDelete = false
                     }
                 }
         }
       
        
+        // MARK: - Emoji Gesture
+        
         @GestureState private var emojiGestureZoom: CGFloat = 1
         @GestureState private var emojiGesturePan: CGOffset = .zero
         
@@ -139,6 +151,7 @@
         private func handleEmojiTap(on emoji: Emoji) -> some Gesture {
             TapGesture()
                 .onEnded {
+                    // select/diselect
                     if isSelected(emoji.id) {
                         selectedEmojis.remove(emoji.id)
                     } else {
@@ -146,6 +159,17 @@
                     }
                 }
         }
+        
+        
+        private var longTappingGesture: some Gesture {
+            LongPressGesture(minimumDuration: 1.0)
+                .onEnded { finished in
+                    isNeedToShowButtonForDelete = finished
+                }
+        }
+        
+        
+        // MARK: - Helpers
         
         
         private func emojiPosition(at location: CGPoint, in geometry: GeometryProxy) -> Emoji.Position {
@@ -156,27 +180,28 @@
             )
         }
         
-        private func view(for emoji: Emoji, in geometry: GeometryProxy) -> some View {
-                Text(emoji.string)
-                    .font(emoji.font)
-                    .selectedEffect(isSelected(emoji.id), scaleEffect, isGestureActive: isMotion)
-                    .offset(shouldApplyOffset(isSelected(emoji.id)))
-                    .scaleEffect(shouldApplyEmojiScale(isSelected(emoji.id)))
-                    .position(emoji.position.in(geometry))
-                    .overlay(isNeedToShowButtonForDelete ? deleter(for: emoji, in: emoji.position.in(geometry)) : nil)
+        private func drop(_ sturldatas: [SturlData], at location: CGPoint, in geometry: GeometryProxy) -> Bool {
+            for sturldata in sturldatas {
+                switch sturldata {
+                case .url(let url):
+                    document.setBackground(url)
+                    return true
+                case .string(let emoji):
+                    document.addEmoji(
+                        emoji, at: emojiPosition(at: location, in: geometry), size: paletteEmojiSize / zoom)
+                    return true
+                default:
+                    break
+                }
+            }
+            return false
         }
         
-        private var longTappingGesture: some Gesture {
-            LongPressGesture(minimumDuration: 1.0)
-                .onEnded { finished in
-                    isNeedToShowButtonForDelete = finished
-                }
-        }
         
         @State private var selectedEmojis: Set<Emoji.ID> = []
         
         private var scaleEffect: CGFloat {
-            selectedEmojis.isEmpty ? zoom * gestureZoom : lastBackgoundZoom
+            selectedEmojis.isEmpty ? zoom * gestureZoom : zoom
         }
         
         private var isMotion: Bool {
@@ -184,7 +209,7 @@
         }
         
         private var panOffset: CGOffset {
-            pan + gesturePan
+            selectedEmojis.isEmpty ? pan + gesturePan : pan
         }
        
         private func isSelected(_ id: Emoji.ID) -> Bool {
@@ -199,18 +224,8 @@
              isSelected ? gestureZoom : 1
         }
         
-        private func deleter(for emoji: Emoji, in position: CGPoint) -> some View {
-            return AnimatedActionButton(systemImage: "x.circle.fill") {
-                document.remove(emojiWith: emoji.id)
-                if selectedEmojis.contains(emoji.id) {
-                    selectedEmojis.remove(emoji.id)
-                }
-            }
-            .foregroundStyle(.gray)
-            .font(emoji.halfFont)
-            .offset(shouldApplyOffset(isSelected(emoji.id)))
-            .position(positionForButton(by: emoji, in: position))
-            .zIndex(1)
+        private func allowPan(for emojiId: Emoji.ID ) -> Bool {
+            isSelected(emojiId) && !isNeedToShowButtonForDelete
         }
     }
 

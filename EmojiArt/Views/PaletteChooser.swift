@@ -25,6 +25,7 @@ struct PaletteChooser: View {
             store.cursorIndex += 1
         }
         .contextMenu {
+            gotoMenu
             AnimatedActionButton("New", systemImage: "plus") {
                 store.insert(name: "Math", emojis: "+−×÷∝∞")
             }
@@ -41,6 +42,20 @@ struct PaletteChooser: View {
         }
         .id(palette.id)
         .transition(.rollUp)
+    }
+    
+    private var gotoMenu: some View {
+        Menu {
+            ForEach(store.palettes) { palette in
+                AnimatedActionButton(palette.name) {
+                    if let index = store.palettes.firstIndex(where: { $0.id == palette.id }) {
+                        store.cursorIndex = index
+                    }
+                }
+            }
+        } label: {
+            Label("Go To", systemImage: "text.insert")
+        }
     }
 }
 
