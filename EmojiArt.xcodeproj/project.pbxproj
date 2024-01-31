@@ -22,6 +22,7 @@
 		388899002B6AEDA500748AD9 /* PaletteList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 388898FF2B6AEDA500748AD9 /* PaletteList.swift */; };
 		388899022B6AEEF300748AD9 /* PaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 388899012B6AEEF300748AD9 /* PaletteView.swift */; };
 		388899042B6AF14600748AD9 /* EditablePaletteList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 388899032B6AF14600748AD9 /* EditablePaletteList.swift */; };
+		388899062B6AFAE100748AD9 /* PaletteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 388899052B6AFAE100748AD9 /* PaletteManager.swift */; };
 		389559742B5FD7C2002B9054 /* SelectEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 389559732B5FD7C2002B9054 /* SelectEffect.swift */; };
 		38EB2A2A2B5E90300090CD1D /* PaletteStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38EB2A292B5E90300090CD1D /* PaletteStore.swift */; };
 		38EB2A2C2B5E94C20090CD1D /* PaletteChooser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38EB2A2B2B5E94C20090CD1D /* PaletteChooser.swift */; };
@@ -44,6 +45,7 @@
 		388898FF2B6AEDA500748AD9 /* PaletteList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteList.swift; sourceTree = "<group>"; };
 		388899012B6AEEF300748AD9 /* PaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteView.swift; sourceTree = "<group>"; };
 		388899032B6AF14600748AD9 /* EditablePaletteList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditablePaletteList.swift; sourceTree = "<group>"; };
+		388899052B6AFAE100748AD9 /* PaletteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteManager.swift; sourceTree = "<group>"; };
 		389559732B5FD7C2002B9054 /* SelectEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectEffect.swift; sourceTree = "<group>"; };
 		38EB2A292B5E90300090CD1D /* PaletteStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteStore.swift; sourceTree = "<group>"; };
 		38EB2A2B2B5E94C20090CD1D /* PaletteChooser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteChooser.swift; sourceTree = "<group>"; };
@@ -145,6 +147,7 @@
 				388898FF2B6AEDA500748AD9 /* PaletteList.swift */,
 				388899012B6AEEF300748AD9 /* PaletteView.swift */,
 				388899032B6AF14600748AD9 /* EditablePaletteList.swift */,
+				388899052B6AFAE100748AD9 /* PaletteManager.swift */,
 			);
 			path = Palette;
 			sourceTree = "<group>";
@@ -232,6 +235,7 @@
 				383E7CE42B5DE55600B4263B /* SturlData.swift in Sources */,
 				383E7CD92B5DD63D00B4263B /* Palette.swift in Sources */,
 				38EB2A2C2B5E94C20090CD1D /* PaletteChooser.swift in Sources */,
+				388899062B6AFAE100748AD9 /* PaletteManager.swift in Sources */,
 				388898FD2B6A9CC800748AD9 /* PaletteEditor.swift in Sources */,
 				388899022B6AEEF300748AD9 /* PaletteView.swift in Sources */,
 				386DCAED2B65BC2B00F1E7FF /* ShakeEffect.swift in Sources */,
