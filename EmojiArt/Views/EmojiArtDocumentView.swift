@@ -76,7 +76,7 @@ struct EmojiArtDocumentView: View {
         }
         .foregroundStyle(.gray)
         .font(emoji.halfFont)
-        .position(positionForButton(by: emoji, in: position))
+        .position(positionForButton(relativelyTo: emoji, in: position))
         .zIndex(1)
     }
     

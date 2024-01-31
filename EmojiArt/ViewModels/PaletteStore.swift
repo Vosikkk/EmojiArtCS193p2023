@@ -8,14 +8,44 @@
 import Foundation
 
 
-class PaletteStore: ObservableObject {
+extension UserDefaults {
+    
+    func palettes(forKey key: String) -> [Palette] {
+        if let jsonData = data(forKey: key),
+           let decodedPalettes = try? JSONDecoder().decode([Palette].self, from: jsonData) {
+            return decodedPalettes
+        } else {
+            return []
+        }
+    }
+    
+    func set(_ palettes: [Palette], forKey key: String) {
+        let data = try? JSONEncoder().encode(palettes)
+        set(data, forKey: key)
+    }
+}
+
+
+
+class PaletteStore: ObservableObject, Identifiable {
     
     let name: String
     
-    @Published var palettes: [Palette] {
-        didSet {
-            if palettes.isEmpty, !oldValue.isEmpty {
-                palettes = oldValue
+    var id: String { name }
+    
+    private var userDefaultsKey: String {
+        "PaletteStore: " + name
+    }
+    
+    
+    var palettes: [Palette] {
+        get {
+            UserDefaults.standard.palettes(forKey: userDefaultsKey)
+        }
+        set {
+            if !newValue.isEmpty {
+                UserDefaults.standard.set(palettes, forKey: userDefaultsKey)
+                objectWillChange.send()
             }
         }
     }
@@ -89,5 +119,16 @@ class PaletteStore: ObservableObject {
     
     func append(name: String, emojis: String) {
         append(Palette(name: name, emojis: emojis))
+    }
+}
+
+extension PaletteStore: Hashable {
+    
+    static func == (lhs: PaletteStore, rhs: PaletteStore) -> Bool {
+        lhs.name == rhs.name
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(name)
     }
 }

@@ -122,7 +122,7 @@ extension EmojiArt.Emoji.Position {
 
 extension View {
     
-    func positionForButton(by emoji: EmojiArt.Emoji, in position: CGPoint) -> CGPoint {
+    func positionForButton(relativelyTo emoji: EmojiArt.Emoji, in position: CGPoint) -> CGPoint {
          CGPoint(x: position.x - CGFloat(Double(emoji.size) / 2), y: position.y - CGFloat(Double(emoji.size) / 1.4))
     }
 }
