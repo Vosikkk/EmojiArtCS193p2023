@@ -78,6 +78,10 @@ extension String {
             }
         }
     }
+    
+    mutating func remove(_ ch: Character) {
+        removeAll(where: { $0 == ch })
+    }
 }
 
 extension AnyTransition {
@@ -85,3 +89,13 @@ extension AnyTransition {
     static let rollDown: AnyTransition = .asymmetric(insertion: .move(edge: .top), removal: .move(edge: .bottom))
 }
 
+extension Character {
+    
+    var isEmoji: Bool {
+        if let firstScalar = unicodeScalars.first, firstScalar.properties.isEmoji {
+            return (firstScalar.value >= 0x238d || unicodeScalars.count > 1)
+        } else {
+            return false
+        }
+    }
+}
