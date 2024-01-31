@@ -16,12 +16,24 @@ precedencegroup PlusXMinusY {
 infix operator +- : PlusXMinusY
 
 
-struct EmojiArt {
+struct EmojiArt: Codable {
     
     var background: URL?
     private(set) var emojis: [Emoji] = []
     private var uniqueEmojiId = 0
     
+    
+    func json() throws -> Data {
+        do {
+            let encoded = try JSONEncoder().encode(self)
+            print("EmojiArt = \(String(data: encoded, encoding: .utf8) ?? "nil")")
+            return encoded
+        } catch {
+            throw EmojiArtErrors.encode(error.localizedDescription)
+        }
+    }
+    
+   // init() {}
     
     
     mutating func addEmoji(_ emoji: String, at position: Emoji.Position, size: Int) {
@@ -67,19 +79,44 @@ struct EmojiArt {
     
    
     
-    struct Emoji: Identifiable {
+    struct Emoji: Identifiable, Codable {
         
         var id: Int
         let string: String
         var position: Position
         var size: Int
         
-        struct Position {
+        struct Position: Codable {
             var x: Int
             var y: Int
             
             static let zero = Self(x: 0, y: 0)
         }
     }
+    
+    enum EmojiArtErrors: LocalizedError {
+        
+        case decode(String)
+        case encode(String)
+        
+        var errorDescription: String? {
+            switch self {
+            case .decode(let description):
+                return NSLocalizedString("Decoding error: \(description)", comment: "Description for decoding")
+            case .encode(let description):
+                return NSLocalizedString("Encoding error: \(description)", comment: "Description for encoding")
+            }
+        }
+    }
 }
 
+extension EmojiArt {
+    
+    init(json: Data) throws {
+        do {
+            self = try JSONDecoder().decode(EmojiArt.self, from: json)
+        } catch {
+             print(EmojiArtErrors.decode(error.localizedDescription))
+        }
+    }
+}
