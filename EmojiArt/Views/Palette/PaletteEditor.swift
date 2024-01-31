@@ -59,13 +59,13 @@ struct PaletteEditor: View {
             Text("Tap to Remove Emojis").font(.caption).foregroundStyle(.gray)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 40))]) {
                 ForEach(palette.emojis.uniqued.map(String.init), id: \.self) { emoji in
-                        Text(emoji)
+                    Text(emoji)
                         .onTapGesture {
                             withAnimation {
                                 palette.emojis.remove(emoji.first!)
                                 emojisToAdd.remove(emoji.first!)
+                            }
                         }
-                    }
                 }
             }
         }

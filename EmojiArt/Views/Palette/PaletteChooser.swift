@@ -25,6 +25,12 @@ struct PaletteChooser: View {
             PaletteEditor(palette: $store.palettes[store.cursorIndex])
                 .font(nil)
         }
+        .sheet(isPresented: $showPaletteList) {
+            NavigationStack {
+                EditablePaletteList(store: store)
+                    .font(nil)
+            }
+        }
     }
     
     
@@ -40,6 +46,9 @@ struct PaletteChooser: View {
             }
             AnimatedActionButton("Edit", systemImage: "pencil") {
                showPaletteEditor = true
+            }
+            AnimatedActionButton("List", systemImage: "list.bullet.rectangle.portrait") {
+                showPaletteList = true
             }
             AnimatedActionButton("Delete", systemImage: "minus.circle", role: .destructive) {
                 store.palettes.remove(at: store.cursorIndex)
