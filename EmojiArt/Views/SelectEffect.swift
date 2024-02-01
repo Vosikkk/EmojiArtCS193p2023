@@ -30,7 +30,6 @@ struct SelectedEffect: ViewModifier {
         RoundedRectangle(cornerRadius: Constant.cornerRadius / scaleFactor)
             .strokeBorder(lineWidth: Constant.lindeWidth / scaleFactor)
             .foregroundStyle(.blue)
-            
     }
     
     private struct Constant {

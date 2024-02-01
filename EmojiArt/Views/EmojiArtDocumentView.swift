@@ -33,10 +33,10 @@ struct EmojiArtDocumentView: View {
             ZStack {
                 Color.white
                 documentContents(in: geometry)
-                    .scaleEffect(scaleEffect)
-                    .offset(panOffset)
+                    .scaleEffect(scaleDocumentEffect)
+                    .offset(panDocumentOffset)
             }
-            .gesture(panGesture.simultaneously(with: !isNeedToShowButtonForDelete ? zoomGesture : nil).simultaneously(with: tapDocumentGesture).simultaneously(with: longTappingGesture))
+            .gesture(longTappingGesture.simultaneously(with: !isNeedToShowButtonForDelete ? zoomGesture : nil).simultaneously(with: tapDocumentGesture).simultaneously(with:  !isNeedToShowButtonForDelete ? panGesture : nil))
             .dropDestination(for: SturlData.self) { sturldatas, location in
                 return drop(sturldatas, at: location, in: geometry)
             }
@@ -51,8 +51,8 @@ struct EmojiArtDocumentView: View {
         ForEach(document.emojis) { emoji in
             view(for: emoji, in: geometry)
                 .gesture(handleEmojiTap(on: emoji)
-                    .simultaneously(with: allowPan(for: emoji.id) ? emojiPanGesture : nil)
-                    .simultaneously(with: isSelected(emoji.id) ? zoomGesture : nil)
+                    .simultaneously(with: !isNeedToShowButtonForDelete ? emojiPanGesture(on: emoji.id) : nil)
+                    .simultaneously(with: isSelectedEmoji(by: emoji.id) ? zoomGesture : nil)
                 )
         }
     }
@@ -60,9 +60,9 @@ struct EmojiArtDocumentView: View {
     private func view(for emoji: Emoji, in geometry: GeometryProxy) -> some View {
         Text(emoji.string)
             .font(emoji.font)
-            .selectedEffect(isSelected(emoji.id), scaleEffect, isGestureActive: isMotion)
-            .offset(shouldApplyOffset(isSelected(emoji.id)))
-            .scaleEffect(shouldApplyEmojiScale(isSelected(emoji.id)))
+            .selectedEffect(isSelectedEmoji(by: emoji.id), scaleDocumentEffect, isGestureActive: selectedEmojiInMotion)
+            .offset(calculateEmojiOffset(dependingOn: isSelectedEmoji(by: emoji.id), for: emoji.id))
+            .scaleEffect(shouldApplyEmojiScale(isSelectedEmoji(by: emoji.id)))
             .position(emoji.position.in(geometry))
             .overlay(isNeedToShowButtonForDelete ? deleter(for: emoji, in: emoji.position.in(geometry)) : nil)
     }
@@ -112,6 +112,7 @@ struct EmojiArtDocumentView: View {
                 gesturePan = value.translation
             }
             .onEnded { value in
+                // Pan for background doesn't update
                 if selectedEmojis.isEmpty {
                     pan += value.translation
                 }
@@ -129,20 +130,47 @@ struct EmojiArtDocumentView: View {
             }
     }
     
+    private var longTappingGesture: some Gesture {
+        LongPressGesture(minimumDuration: 1.0)
+            .onEnded { finished in
+                isNeedToShowButtonForDelete = finished
+            }
+    }
+    
+    
     
     // MARK: - Emoji Gesture
     
+    @State private var unselectedEmoji: Emoji.ID = -1
+    
     @GestureState private var emojiGestureZoom: CGFloat = 1
     @GestureState private var emojiGesturePan: CGOffset = .zero
+    @GestureState private var unselectedEmojiPan: CGOffset = .zero
     
-    private var emojiPanGesture: some Gesture {
+    
+    private func emojiPanGesture(on emojiId: Emoji.ID) -> some Gesture {
         DragGesture()
-            .updating($emojiGesturePan) { value, gesturePan, _ in
+            .updating(isSelectedEmoji(by: emojiId) ? $emojiGesturePan : $unselectedEmojiPan) { value, gesturePan, _ in
+                // Update the translation based on whether the dragged emoji is selected or unselected.
+                // The binding is changed accordingly to $emojiGesturePan for selected emojis
+                // and $unselectedEmojiPan for unselected emojis.
+                // Also Extra
                 gesturePan = value.translation
             }
             .onEnded { value in
-                for id in selectedEmojis {
-                    document.move(emojiWith: id, by: value.translation)
+                if !isSelectedEmoji(by: emojiId) {
+                    document.move(emojiWith: emojiId, by: value.translation)
+                } else {
+                    for id in selectedEmojis {
+                        document.move(emojiWith: id, by: value.translation)
+                    }
+                }
+            }
+            .onChanged { _ in
+                // Extra task
+                // Here we want to determine dragging of unselected emoji
+                if !isSelectedEmoji(by: emojiId) && unselectedEmoji != emojiId {
+                    unselectedEmoji = emojiId
                 }
             }
     }
@@ -150,20 +178,11 @@ struct EmojiArtDocumentView: View {
     private func handleEmojiTap(on emoji: Emoji) -> some Gesture {
         TapGesture()
             .onEnded {
-                // select/diselect
-                if isSelected(emoji.id) {
+                if isSelectedEmoji(by: emoji.id) {
                     selectedEmojis.remove(emoji.id)
                 } else {
                     selectedEmojis.insert(emoji.id)
                 }
-            }
-    }
-    
-    
-    private var longTappingGesture: some Gesture {
-        LongPressGesture(minimumDuration: 1.0)
-            .onEnded { finished in
-                isNeedToShowButtonForDelete = finished
             }
     }
     
@@ -199,37 +218,32 @@ struct EmojiArtDocumentView: View {
     
     @State private var selectedEmojis: Set<Emoji.ID> = []
     
-    private var scaleEffect: CGFloat {
+    private var scaleDocumentEffect: CGFloat {
         selectedEmojis.isEmpty ? zoom * gestureZoom : zoom
     }
     
-    private var isMotion: Bool {
+    private var selectedEmojiInMotion: Bool {
         emojiGesturePan != .zero
     }
     
-    private var panOffset: CGOffset {
+    private var panDocumentOffset: CGOffset {
         selectedEmojis.isEmpty ? pan + gesturePan : pan
     }
     
-    private func isSelected(_ id: Emoji.ID) -> Bool {
+    private func isSelectedEmoji(by id: Emoji.ID) -> Bool {
         selectedEmojis.contains(id)
     }
     
-    private func shouldApplyOffset(_ isSelected: Bool) -> CGOffset {
-        isSelected ? emojiGesturePan : .zero
+    private func calculateEmojiOffset(dependingOn selection: Bool, for emojiId: Emoji.ID) -> CGOffset {
+        selection ? emojiGesturePan : unselectedEmoji == emojiId ? unselectedEmojiPan : .zero
     }
     
     private func shouldApplyEmojiScale(_ isSelected: Bool) -> CGFloat {
         isSelected ? gestureZoom : 1
     }
-    
-    private func allowPan(for emojiId: Emoji.ID ) -> Bool {
-        isSelected(emojiId) && !isNeedToShowButtonForDelete
-    }
 }
 
-
-    #Preview {
-        EmojiArtDocumentView(document: EmojiArtDocument())
-            .environmentObject(PaletteStore(named: "Preview"))
-    }
+#Preview {
+    EmojiArtDocumentView(document: EmojiArtDocument())
+        .environmentObject(PaletteStore(named: "Preview"))
+}
