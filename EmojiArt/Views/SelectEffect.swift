@@ -19,8 +19,6 @@ struct SelectedEffect: ViewModifier {
         self.isGestureActive = isGestureActive
     }
     
-    
-    
     func body(content: Content) -> some View {
         content
             .overlay(isSelected && !isGestureActive ? ractangle : nil)

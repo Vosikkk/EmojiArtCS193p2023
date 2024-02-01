@@ -25,7 +25,7 @@ class EmojiArtDocument: ObservableObject {
     
     private func autosave() {
         save(to: autosaveURL)
-       // print("autosaved to \(autosaveURL)")
+        print("autosaved to \(autosaveURL)")
     }
     
     private func save(to url: URL) {

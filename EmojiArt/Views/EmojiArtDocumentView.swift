@@ -16,6 +16,23 @@ struct EmojiArtDocumentView: View {
     @ObservedObject var document: EmojiArtDocument
     
     
+    @State private var isNeedToShowButtonForDelete: Bool = false
+    @State private var zoom: CGFloat = 1
+    @State private var pan: CGOffset = .zero
+    
+    @GestureState private var gestureZoom: CGFloat = 1
+    @GestureState private var gesturePan: CGOffset = .zero
+    
+    
+    @State private var unselectedEmoji: Emoji.ID = -1
+    
+    @GestureState private var emojiGestureZoom: CGFloat = 1
+    @GestureState private var emojiGesturePan: CGOffset = .zero
+    @GestureState private var unselectedEmojiPan: CGOffset = .zero
+    
+    
+    @State private var shouldWobble = false
+    
     // MARK: - Views
     
     var body: some View {
@@ -65,11 +82,12 @@ struct EmojiArtDocumentView: View {
             .scaleEffect(shouldApplyEmojiScale(isSelectedEmoji(by: emoji.id)))
             .position(emoji.position.in(geometry))
             .overlay(isNeedToShowButtonForDelete ? deleter(for: emoji, in: emoji.position.in(geometry)) : nil)
+            
     }
     
     private func deleter(for emoji: Emoji, in position: CGPoint) -> some View {
         return AnimatedActionButton(systemImage: "x.circle.fill") {
-            document.remove(emojiWith: emoji.id)
+                document.remove(emojiWith: emoji.id)
             if selectedEmojis.contains(emoji.id) {
                 selectedEmojis.remove(emoji.id)
             }
@@ -80,15 +98,67 @@ struct EmojiArtDocumentView: View {
         .zIndex(1)
     }
     
-    // MARK: - Document Gesture
     
-    @State private var isNeedToShowButtonForDelete: Bool = false
-    @State private var zoom: CGFloat = 1
-    @State private var pan: CGOffset = .zero
+    // MARK: - Helpers
     
-    @GestureState private var gestureZoom: CGFloat = 1
-    @GestureState private var gesturePan: CGOffset = .zero
+    private func emojiPosition(at location: CGPoint, in geometry: GeometryProxy) -> Emoji.Position {
+        let center = geometry.frame(in: .local).center
+        return Emoji.Position(
+            x: Int((location.x - center.x - pan.width) / zoom),
+            y: Int(-(location.y - center.y - pan.height) / zoom)
+        )
+    }
     
+    private func drop(_ sturldatas: [SturlData], at location: CGPoint, in geometry: GeometryProxy) -> Bool {
+        for sturldata in sturldatas {
+            switch sturldata {
+            case .url(let url):
+                document.setBackground(url)
+                return true
+            case .string(let emoji):
+                isNeedToShowButtonForDelete = false
+                document.addEmoji(
+                    emoji, at: emojiPosition(at: location, in: geometry), size: paletteEmojiSize / zoom)
+                return true
+            default:
+                break
+            }
+        }
+        return false
+    }
+    
+    
+    @State private var selectedEmojis: Set<Emoji.ID> = []
+    
+    private var scaleDocumentEffect: CGFloat {
+        selectedEmojis.isEmpty ? zoom * gestureZoom : zoom
+    }
+    
+    private var selectedEmojiInMotion: Bool {
+        emojiGesturePan != .zero
+    }
+    
+    private var panDocumentOffset: CGOffset {
+        selectedEmojis.isEmpty ? pan + gesturePan : pan
+    }
+    
+    private func isSelectedEmoji(by id: Emoji.ID) -> Bool {
+        selectedEmojis.contains(id)
+    }
+    
+    private func calculateEmojiOffset(dependingOn selection: Bool, for emojiId: Emoji.ID) -> CGOffset {
+        selection ? emojiGesturePan : unselectedEmoji == emojiId ? unselectedEmojiPan : .zero
+    }
+    
+    private func shouldApplyEmojiScale(_ isSelected: Bool) -> CGFloat {
+        isSelected ? gestureZoom : 1
+    }
+}
+
+
+// MARK: - Document Gesture
+
+extension EmojiArtDocumentView {
     
     private var zoomGesture: some Gesture {
         MagnificationGesture()
@@ -136,17 +206,12 @@ struct EmojiArtDocumentView: View {
                 isNeedToShowButtonForDelete = finished
             }
     }
-    
-    
-    
-    // MARK: - Emoji Gesture
-    
-    @State private var unselectedEmoji: Emoji.ID = -1
-    
-    @GestureState private var emojiGestureZoom: CGFloat = 1
-    @GestureState private var emojiGesturePan: CGOffset = .zero
-    @GestureState private var unselectedEmojiPan: CGOffset = .zero
-    
+}
+
+
+// MARK: - Emoji Gesture
+
+extension EmojiArtDocumentView {
     
     private func emojiPanGesture(on emojiId: Emoji.ID) -> some Gesture {
         DragGesture()
@@ -185,63 +250,8 @@ struct EmojiArtDocumentView: View {
                 }
             }
     }
-    
-    
-    // MARK: - Helpers
-    
-    
-    private func emojiPosition(at location: CGPoint, in geometry: GeometryProxy) -> Emoji.Position {
-        let center = geometry.frame(in: .local).center
-        return Emoji.Position(
-            x: Int((location.x - center.x - pan.width) / zoom),
-            y: Int(-(location.y - center.y - pan.height) / zoom)
-        )
-    }
-    
-    private func drop(_ sturldatas: [SturlData], at location: CGPoint, in geometry: GeometryProxy) -> Bool {
-        for sturldata in sturldatas {
-            switch sturldata {
-            case .url(let url):
-                document.setBackground(url)
-                return true
-            case .string(let emoji):
-                document.addEmoji(
-                    emoji, at: emojiPosition(at: location, in: geometry), size: paletteEmojiSize / zoom)
-                return true
-            default:
-                break
-            }
-        }
-        return false
-    }
-    
-    
-    @State private var selectedEmojis: Set<Emoji.ID> = []
-    
-    private var scaleDocumentEffect: CGFloat {
-        selectedEmojis.isEmpty ? zoom * gestureZoom : zoom
-    }
-    
-    private var selectedEmojiInMotion: Bool {
-        emojiGesturePan != .zero
-    }
-    
-    private var panDocumentOffset: CGOffset {
-        selectedEmojis.isEmpty ? pan + gesturePan : pan
-    }
-    
-    private func isSelectedEmoji(by id: Emoji.ID) -> Bool {
-        selectedEmojis.contains(id)
-    }
-    
-    private func calculateEmojiOffset(dependingOn selection: Bool, for emojiId: Emoji.ID) -> CGOffset {
-        selection ? emojiGesturePan : unselectedEmoji == emojiId ? unselectedEmojiPan : .zero
-    }
-    
-    private func shouldApplyEmojiScale(_ isSelected: Bool) -> CGFloat {
-        isSelected ? gestureZoom : 1
-    }
 }
+
 
 #Preview {
     EmojiArtDocumentView(document: EmojiArtDocument())
